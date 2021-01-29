@@ -1,0 +1,118 @@
+version: '2.4'
+
+services:
+  deployer:
+    build:
+      context: "./docker/"
+      target: deployer
+    depends_on:
+      server_dev:
+        condition: service_healthy
+      server_prod:
+        condition: service_healthy
+    volumes:
+      - ./:/project
+    networks:
+      - demo
+#    environment:
+#      # See https://docs.docker.com/docker-for-mac/networking/#i-want-to-connect-from-a-container-to-a-service-on-the-host
+#      # See https://github.com/docker/for-linux/issues/264
+#      # The `remote_host` below may optionally be replaced with `remote_connect_back=1`
+#      XDEBUG_CONFIG: >-
+#        remote_enable=1
+#        remote_host=${XDEBUG_RHOST:-host.docker.internal}
+#        remote_autostart=1
+#        remote_port=9000
+#        idekey=PHPSTORM
+#      # This should correspond to the server declared in PHPStorm `Preferences | Languages & Frameworks | PHP | Servers`
+#      # Then PHPStorm will use the corresponding path mappings
+#      PHP_IDE_CONFIG: serverName=deployer-e2e
+
+  local_dev:
+    build:
+      context: "./docker/"
+      target: server
+    volumes:
+    - ./:/var/www/html
+    ports:
+      - "18080:8080"
+    environment:
+      - DATABASE_URL=postgres://api-platform:!ChangeMe!@local_db/api?server_version=12
+    command: [ "php", "-t", "public", "-S", "0.0.0.0:8080"]
+
+  local_db:
+    image: postgres:12-alpine
+    environment:
+      - POSTGRES_DB=api
+      - POSTGRES_PASSWORD=!ChangeMe!
+      - POSTGRES_USER=api-platform
+    volumes:
+      - local-dev-db-data:/var/lib/postgresql/data:rw
+
+  server_dev:
+    build:
+      context: "./docker/"
+      target: server
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:81/health_check"]
+      interval: 5s
+      timeout: 2s
+      retries: 3
+      start_period: 2s
+    ports: 
+      - "8080:80"
+    networks:
+      demo:
+        aliases:
+          - dev.test
+
+  db_dev:
+    image: postgres:12-alpine
+    volumes:
+      - db-dev-data:/var/lib/postgresql/data:rw
+    environment:
+      - POSTGRES_DB=api
+      - POSTGRES_PASSWORD=!ChangeMe!
+      - POSTGRES_USER=api-platform
+    networks:
+      demo:
+        aliases:
+          - db_dev.test
+  
+  server_prod:
+    build:
+      context: "./docker/"
+      target: server
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:81/health_check"]
+      interval: 5s
+      timeout: 2s
+      retries: 3
+      start_period: 2s
+    ports: 
+      - "8081:80"
+    networks:
+      demo:
+        aliases:
+          - prod.test
+
+  db_prod:
+    image: postgres:12-alpine
+    volumes:
+      - db-prod-data:/var/lib/postgresql/data:rw
+    environment:
+      - POSTGRES_DB=api
+      - POSTGRES_PASSWORD=!ChangeMe!
+      - POSTGRES_USER=api-platform
+    networks:
+      demo:
+        aliases:
+          - db_prod.test
+
+networks:
+  demo:
+
+volumes:
+  local-dev-db-data: {}
+  db-dev-data: {}
+  db-prod-data: {}
