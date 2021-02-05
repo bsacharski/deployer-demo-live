@@ -3,6 +3,7 @@
 namespace App\Entity;
 
 use ApiPlatform\Core\Annotation\ApiResource;
+use DateTimeImmutable;
 use DateTimeInterface;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
@@ -12,6 +13,7 @@ use Symfony\Component\Validator\Constraints as Assert;
  *
  * @ApiResource
  * @ORM\Entity
+ * @ORM\HasLifecycleCallbacks()
  */
 class Greeting
 {
@@ -46,5 +48,14 @@ class Greeting
     public function getId(): int
     {
         return $this->id;
+    }
+
+    /**
+     * @ORM\PrePersist()
+     * @return void
+     */
+    public function prePersistHandler()
+    {
+        $this->createdAt = new DateTimeImmutable();
     }
 }
