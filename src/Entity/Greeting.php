@@ -3,6 +3,7 @@
 namespace App\Entity;
 
 use ApiPlatform\Core\Annotation\ApiResource;
+use DateTimeInterface;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
 
@@ -30,6 +31,17 @@ class Greeting
      * @Assert\NotBlank
      */
     public $name = '';
+
+    /**
+     * @var DateTimeInterface
+     * @ORM\Column(type="datetimetz", nullable=false)
+     */
+    private $createdAt;
+
+    public function getCreatedAt(): DateTimeInterface
+    {
+        return $this->createdAt;
+    }
 
     public function getId(): int
     {
